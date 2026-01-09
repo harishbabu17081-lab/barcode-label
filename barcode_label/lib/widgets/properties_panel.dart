@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/canvas_provider.dart';
 import '../models/widget_model.dart';
-// import 'package:flutter_colorpicker/flutter_colorpicker.dart'; // Add if color picking needed
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:file_picker/file_picker.dart';
 
 class PropertiesPanel extends StatelessWidget {
   const PropertiesPanel({super.key});
@@ -84,12 +85,55 @@ class PropertiesPanel extends StatelessWidget {
               _updateProp(provider, widget, 'fontSize', val);
             },
           ),
+          _buildColorPickerField(
+            context,
+            'Color',
+            Color(widget.properties['color'] ?? 0xFF000000),
+            (color) {
+              _updateProp(provider, widget, 'color', color.value);
+            },
+          ),
         ] else if (widget.type == WidgetType.barcode) ...[
           _buildTextField('Data', widget.properties['data'] ?? '', (val) {
             _updateProp(provider, widget, 'data', val);
           }),
+        ] else if (widget.type == WidgetType.image) ...[
+          // Image Picker
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Image Source'),
+                const SizedBox(height: 8),
+                if (widget.properties['path'] != null)
+                  Text(
+                    'Selected: ...${widget.properties['path'].toString().split(r'\').last}',
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                const SizedBox(height: 8),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.image),
+                  label: const Text('Select Image'),
+                  onPressed: () async {
+                    // Import file_picker at top
+                    final result = await FilePicker.platform.pickFiles(
+                      type: FileType.image,
+                    );
+                    if (result != null && result.files.single.path != null) {
+                      _updateProp(
+                        provider,
+                        widget,
+                        'path',
+                        result.files.single.path,
+                      );
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
         ],
-        // Add more property fields based on type
       ],
     );
   }
@@ -152,7 +196,7 @@ class PropertiesPanel extends StatelessWidget {
                 isDense: true,
                 border: OutlineInputBorder(),
               ),
-              onFieldSubmitted: (val) {
+              onChanged: (val) {
                 final numVal = double.tryParse(val);
                 if (numVal != null) onChanged(numVal);
               },
@@ -182,6 +226,58 @@ class PropertiesPanel extends StatelessWidget {
               border: OutlineInputBorder(),
             ),
             onChanged: onChanged,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildColorPickerField(
+    BuildContext context,
+    String label,
+    Color currentColor,
+    Function(Color) onColorChanged,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        children: [
+          Text(label),
+          const SizedBox(width: 16),
+          GestureDetector(
+            onTap: () {
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    title: const Text('Pick a color'),
+                    content: SingleChildScrollView(
+                      child: ColorPicker(
+                        pickerColor: currentColor,
+                        onColorChanged: onColorChanged,
+                      ),
+                    ),
+                    actions: <Widget>[
+                      ElevatedButton(
+                        child: const Text('Got it'),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: currentColor,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.grey),
+              ),
+            ),
           ),
         ],
       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import 'package:provider/provider.dart';
 import 'package:barcode_widget/barcode_widget.dart';
 import '../providers/canvas_provider.dart';
@@ -147,34 +148,37 @@ class _WidgetRenderer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<CanvasProvider>(context, listen: false);
-    // Listen to selection changes from provider?
-    // Actually, we are inside Consumer in parent, but this widget is not rebuilding when selection changes unless parent rebuilds.
-    // Parent rebuilds on any notifyListeners.
 
+    // We observe selection to show border, but we handle gestures regardless
     final isSelected = context.select<CanvasProvider, bool>(
       (p) => p.selectedWidgetId == widget.id,
     );
 
     return GestureDetector(
       onTap: () => provider.selectWidget(widget.id),
-      onPanUpdate: isSelected
-          ? (details) {
-              provider.updateWidgetPosition(
-                widget.id,
-                WidgetPosition(
-                  x: widget.position.x + details.delta.dx,
-                  y: widget.position.y + details.delta.dy,
-                  width: widget.position.width,
-                  height: widget.position.height,
-                  rotation: widget.position.rotation,
-                ),
-              );
-            }
-          : null,
+      onPanStart: (_) {
+        provider.prepareUndo();
+        provider.selectWidget(widget.id);
+      },
+      onPanUpdate: (details) {
+        // provider.selectWidget(widget.id); // Ensure selected? redundant if onPanStart does it
+        provider.updateWidgetPosition(
+          widget.id,
+          WidgetPosition(
+            x: widget.position.x + details.delta.dx,
+            y: widget.position.y + details.delta.dy,
+            width: widget.position.width,
+            height: widget.position.height,
+            rotation: widget.position.rotation,
+          ),
+        );
+      },
       child: Container(
         decoration: isSelected
             ? BoxDecoration(border: Border.all(color: Colors.blue, width: 2))
-            : null,
+            : BoxDecoration(
+                border: Border.all(color: Colors.transparent, width: 2),
+              ), // Keep size constant
         width: widget.position.width,
         height: widget.position.height,
         child: _renderContent(widget),
@@ -204,6 +208,19 @@ class _WidgetRenderer extends StatelessWidget {
           border: Border.all(color: Colors.black, width: 2),
         ),
       );
+    } else if (widget.type == WidgetType.image) {
+      if (widget.properties['path'] != null) {
+        return Image.file(
+          File(widget.properties['path']),
+          width: widget.position.width,
+          height: widget.position.height,
+          fit: BoxFit.fill,
+        );
+      } else {
+        return const Center(
+          child: Icon(Icons.image, size: 50, color: Colors.grey),
+        );
+      }
     }
     return const Placeholder();
   }

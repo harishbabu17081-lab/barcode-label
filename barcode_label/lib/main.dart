@@ -4,6 +4,7 @@ import 'screens/editor_screen.dart';
 import 'providers/canvas_provider.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const BarcodeLabelApp());
 }
 
