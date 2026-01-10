@@ -73,24 +73,33 @@ class WidgetPalette extends StatelessWidget {
         : ListTile(leading: Icon(icon), title: Text(label));
 
     return Draggable<WidgetType>(
+      key: ValueKey(
+        '${type}_${DateTime.now().millisecondsSinceEpoch}',
+      ),  
       data: type,
       feedback: Material(
-        elevation: 4.0,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.all(8.0),
-          color: Colors.white,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [Icon(icon), const SizedBox(width: 8), Text(label)],
+        color: Colors.transparent, 
+        child: Material(
+          elevation: 4.0,
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.all(8.0),
+            color: Colors.white,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [Icon(icon), const SizedBox(width: 8), Text(label)],
+            ),
           ),
         ),
       ),
+      childWhenDragging: Opacity(opacity: 0.5, child: itemContent),
+      onDragEnd: (details) {
+        // Optional cleanup if needed
+      },
       child: InkWell(
         onTap: () {
           final provider = Provider.of<CanvasProvider>(context, listen: false);
           _addWidgetToCenter(provider, type);
-          // No need to close drawer if we are in compact sidebar mode
         },
         child: itemContent,
       ),

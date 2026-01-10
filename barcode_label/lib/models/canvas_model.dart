@@ -15,7 +15,7 @@ class CanvasProperties {
   String backgroundColor;
 
   CanvasProperties({
-    this.width = 100,
+    this.width = 150,
     this.height = 150,
     this.orientation = LabelOrientation.portrait,
     this.units = LabelUnits.mm,
@@ -28,20 +28,46 @@ class CanvasProperties {
 }
 
 @JsonSerializable(explicitToJson: true)
+class LabelPage {
+  String id;
+  List<LabelWidget> widgets;
+
+  LabelPage({required this.id, required this.widgets});
+
+  factory LabelPage.fromJson(Map<String, dynamic> json) =>
+      _$LabelPageFromJson(json);
+  Map<String, dynamic> toJson() => _$LabelPageToJson(this);
+}
+
+@JsonSerializable(explicitToJson: true)
 class LabelTemplate {
   String templateName;
   String version;
   CanvasProperties canvasProperties;
-  List<LabelWidget> widgets;
+  List<LabelPage> pages;
 
   LabelTemplate({
     required this.templateName,
     this.version = '1.0',
     required this.canvasProperties,
-    required this.widgets,
+    required this.pages,
   });
 
-  factory LabelTemplate.fromJson(Map<String, dynamic> json) =>
-      _$LabelTemplateFromJson(json);
+  factory LabelTemplate.fromJson(Map<String, dynamic> json) {
+    if (json.containsKey('widgets') && !json.containsKey('pages')) {
+      final widgetsList = (json['widgets'] as List)
+          .map((e) => LabelWidget.fromJson(e as Map<String, dynamic>))
+          .toList();
+      return LabelTemplate(
+        templateName: json['templateName'] as String,
+        version: json['version'] as String? ?? '1.0',
+        canvasProperties: CanvasProperties.fromJson(
+          json['canvasProperties'] as Map<String, dynamic>,
+        ),
+        pages: [LabelPage(id: 'page_1', widgets: widgetsList)],
+      );
+    }
+    return _$LabelTemplateFromJson(json);
+  }
   Map<String, dynamic> toJson() => _$LabelTemplateToJson(this);
 }

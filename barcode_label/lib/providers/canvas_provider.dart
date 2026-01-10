@@ -7,12 +7,13 @@ import 'dart:convert';
 class CanvasProvider extends ChangeNotifier {
   LabelTemplate _template;
   String? _selectedWidgetId;
+  String _activePageId = 'page_1'; 
 
   CanvasProvider()
     : _template = LabelTemplate(
         templateName: 'New Template',
         canvasProperties: CanvasProperties(),
-        widgets: [],
+        pages: [LabelPage(id: 'page_1', widgets: [])],
       );
 
   LabelTemplate get template => _template;
@@ -20,10 +21,22 @@ class CanvasProvider extends ChangeNotifier {
 
   LabelWidget? get selectedWidget {
     if (_selectedWidgetId == null) return null;
-    try {
-      return _template.widgets.firstWhere((w) => w.id == _selectedWidgetId);
-    } catch (e) {
-      return null;
+    for (var page in _template.pages) {
+      try {
+        return page.widgets.firstWhere((w) => w.id == _selectedWidgetId);
+      } catch (_) {
+        continue;
+      }
+    }
+    return null;
+  }
+
+  String get activePageId => _activePageId;
+
+  void setActivePage(String pageId) {
+    if (_activePageId != pageId) {
+      _activePageId = pageId;
+      notifyListeners();
     }
   }
 
@@ -32,12 +45,9 @@ class CanvasProvider extends ChangeNotifier {
   bool get canUndo => _undoStack.isNotEmpty;
 
   void _saveState() {
-    // Deep copy via JSON
     final json = _template.toJson();
     final copy = LabelTemplate.fromJson(json);
     _undoStack.add(copy);
-
-    // Limit stack size if needed, e.g. 20
     if (_undoStack.length > 20) {
       _undoStack.removeAt(0);
     }
@@ -46,7 +56,7 @@ class CanvasProvider extends ChangeNotifier {
   void undo() {
     if (_undoStack.isNotEmpty) {
       _template = _undoStack.removeLast();
-      _selectedWidgetId = null; // Deselect to avoid consistency issues
+      _selectedWidgetId = null;
       notifyListeners();
     }
   }
@@ -59,100 +69,112 @@ class CanvasProvider extends ChangeNotifier {
 
   void addWidget(LabelWidget widget) {
     _saveState();
-    _template.widgets.add(widget);
-    _selectedWidgetId = widget.id;
-    notifyListeners();
+    final pageIndex = _template.pages.indexWhere((p) => p.id == _activePageId);
+    if (pageIndex != -1) {
+      _template.pages[pageIndex].widgets.add(widget);
+      _selectedWidgetId = widget.id;
+      notifyListeners();
+    }
   }
 
   void removeWidget(String id) {
     _saveState();
-    _template.widgets.removeWhere((w) => w.id == id);
+    for (var page in _template.pages) {
+      page.widgets.removeWhere((w) => w.id == id);
+    }
     if (_selectedWidgetId == id) {
       _selectedWidgetId = null;
     }
     notifyListeners();
   }
 
+  void addPage() {
+    _saveState();
+    final newPageId =
+        'page_${_template.pages.length + 1}_${DateTime.now().millisecondsSinceEpoch}';
+    _template.pages.add(LabelPage(id: newPageId, widgets: []));
+    _activePageId = newPageId;
+    notifyListeners();
+  }
+
+  void removePage(String pageId) {
+    if (_template.pages.length <= 1) return;
+    _saveState();
+    _template.pages.removeWhere((p) => p.id == pageId);
+    if (_activePageId == pageId) {
+      _activePageId = _template.pages.first.id;
+    }
+    notifyListeners();
+  }
+
   void selectWidget(String? id) {
-    // Selection doesn't need undo state usually, but user preference may vary.
-    // Generally navigation is not undoable.
     _selectedWidgetId = id;
     notifyListeners();
   }
 
   void updateWidgetPosition(String id, WidgetPosition position) {
-    // For performance, we might want to debounce this or save state only on panEnd.
-    // But provider doesn't know about panEnd.
-    // CanvasArea calls this continuously.
-    // TODO: Calling saveState on every pixel move is bad.
-    // We need a separate method for "finish move" or handle snapshotting differently.
-
-    // For now, let's NOT save state on every updateWidgetPosition call if it's continuous.
-    // However, without it, undo will be broken for moves.
-    // Better strategy: The UI (CanvasArea) should call 'saveState' before starting a drag.
-    // But we want to encapsulate logic here.
-
-    // Let's rely on a separate method 'startTransaction' or similar, OR
-    // check if we are already in a "drag" state.
-
-    // Simplest fix for "revert option" request: Just save state on property changes and adds/removes.
-    // For moves, we might spam the stack.
-    // Let's implement 'saveState' but maybe we only call it if the position changed significantly?
-    // No, drag interactions must simply call `saveState` ONCE at start.
-    // But we don't have that hook easily exposed to Provider from existing specific update methods without refactoring `CanvasArea`.
-
-    // Let's modify logic: assume `CanvasArea` will handle the "snapshot before drag".
-    // OR, providing a `prepareForChange()` method.
-
-    final index = _template.widgets.indexWhere((w) => w.id == id);
-    if (index != -1) {
-      // We won't call _saveState() here automatically to avoid flood.
-      // The UI calling this should call prepareUndo() before starting modification.
-      _template.widgets[index].position = position;
-      notifyListeners();
+    for (var page in _template.pages) {
+      final index = page.widgets.indexWhere((w) => w.id == id);
+      if (index != -1) {
+        page.widgets[index].position = position;
+        notifyListeners();
+        return;
+      }
     }
   }
-
-  // Helper for UI to call before continuous ops
   void prepareUndo() {
     _saveState();
   }
 
   void updateWidgetProperties(String id, Map<String, dynamic> properties) {
     _saveState();
-    final index = _template.widgets.indexWhere((w) => w.id == id);
-    if (index != -1) {
-      _template.widgets[index].properties = Map<String, dynamic>.from(
-        properties,
-      );
-      notifyListeners();
+    for (var page in _template.pages) {
+      final index = page.widgets.indexWhere((w) => w.id == id);
+      if (index != -1) {
+        page.widgets[index].properties = Map<String, dynamic>.from(properties);
+        notifyListeners();
+        return;
+      }
     }
   }
 
   void loadTemplate(LabelTemplate template) {
-    _undoStack.clear(); // Clear stack on new load
+    _undoStack.clear(); 
     _template = template;
     _selectedWidgetId = null;
+    if (_template.pages.isNotEmpty) {
+      _activePageId = _template.pages.first.id;
+    }
     notifyListeners();
   }
 
   void updateWidget(String id, LabelWidget updatedWidget) {
     _saveState();
-    final index = _template.widgets.indexWhere((w) => w.id == id);
-    if (index != -1) {
-      _template.widgets[index] = updatedWidget;
-      notifyListeners();
+    for (var page in _template.pages) {
+      final index = page.widgets.indexWhere((w) => w.id == id);
+      if (index != -1) {
+        page.widgets[index] = updatedWidget;
+        notifyListeners();
+        return;
+      }
     }
   }
 
   void createNewTemplate() {
-    _saveState(); // Save old one just in case
+    _saveState(); 
     _template = LabelTemplate(
       templateName: 'New Template',
       canvasProperties: CanvasProperties(),
-      widgets: [],
+      pages: [LabelPage(id: 'page_1', widgets: [])],
     );
     _selectedWidgetId = null;
+    _activePageId = 'page_1';
+    notifyListeners();
+  }
+
+  void renameTemplate(String newName) {
+    
+    _template.templateName = newName;
     notifyListeners();
   }
 

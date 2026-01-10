@@ -97,6 +97,60 @@ class PropertiesPanel extends StatelessWidget {
           _buildTextField('Data', widget.properties['data'] ?? '', (val) {
             _updateProp(provider, widget, 'data', val);
           }),
+          _buildColorPickerField(
+            context,
+            'Color',
+            Color(widget.properties['color'] ?? 0xFF000000),
+            (color) {
+              _updateProp(provider, widget, 'color', color.value);
+            },
+          ),
+        ] else if (widget.type == WidgetType.shape) ...[
+          _buildColorPickerField(
+            context,
+            'Stroke Color',
+            widget.properties['strokeColor'] is int
+                ? Color(widget.properties['strokeColor'])
+                : Colors.black,
+            (color) {
+              _updateProp(provider, widget, 'strokeColor', color.value);
+            },
+          ),
+          _buildNumberField(
+            'Stroke Width',
+            (widget.properties['strokeWidth'] as num?)?.toDouble() ?? 2.0,
+            (val) {
+              _updateProp(provider, widget, 'strokeWidth', val);
+            },
+          ),
+          _buildColorPickerField(
+            context,
+            'Fill Color',
+            widget.properties['fillColor'] is int
+                ? Color(widget.properties['fillColor'])
+                : Colors.transparent,
+            (color) {
+              _updateProp(
+                provider,
+                widget,
+                'fillColor',
+                color.value,
+              ); // Keep int for JSON
+              _updateProp(
+                provider,
+                widget,
+                'filled',
+                color.a > 0,
+              ); // Auto-set filled
+            },
+          ),
+          _buildNumberField(
+            'Corner Radius',
+            (widget.properties['borderRadius'] as num?)?.toDouble() ?? 0.0,
+            (val) {
+              _updateProp(provider, widget, 'borderRadius', val);
+            },
+          ),
         ] else if (widget.type == WidgetType.image) ...[
           // Image Picker
           Padding(

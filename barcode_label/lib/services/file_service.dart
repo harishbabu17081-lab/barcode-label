@@ -2,17 +2,13 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart'; // for kIsWeb
-import 'package:path_provider/path_provider.dart'; // Not strictly needed for file_picker save in some cases but good to have
 import '../models/canvas_model.dart';
-import '../models/widget_model.dart';
 
 class FileService {
   static Future<void> saveTemplate(LabelTemplate template) async {
     final jsonString = jsonEncode(template.toJson());
 
     if (kIsWeb) {
-      // Web specific save logic (download) - simplified or placeholder
-      // For now, print to console or use universal_html if strict web support needed
       print('Saving JSON content: $jsonString');
     } else {
       String? outputFile = await FilePicker.platform.saveFile(

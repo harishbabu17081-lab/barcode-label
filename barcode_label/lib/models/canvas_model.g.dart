@@ -8,7 +8,7 @@ part of 'canvas_model.dart';
 
 CanvasProperties _$CanvasPropertiesFromJson(Map<String, dynamic> json) =>
     CanvasProperties(
-      width: (json['width'] as num?)?.toDouble() ?? 100,
+      width: (json['width'] as num?)?.toDouble() ?? 150,
       height: (json['height'] as num?)?.toDouble() ?? 150,
       orientation:
           $enumDecodeNullable(_$LabelOrientationEnumMap, json['orientation']) ??
@@ -35,6 +35,18 @@ const _$LabelOrientationEnumMap = {
 
 const _$LabelUnitsEnumMap = {LabelUnits.mm: 'mm', LabelUnits.inches: 'inches'};
 
+LabelPage _$LabelPageFromJson(Map<String, dynamic> json) => LabelPage(
+  id: json['id'] as String,
+  widgets: (json['widgets'] as List<dynamic>)
+      .map((e) => LabelWidget.fromJson(e as Map<String, dynamic>))
+      .toList(),
+);
+
+Map<String, dynamic> _$LabelPageToJson(LabelPage instance) => <String, dynamic>{
+  'id': instance.id,
+  'widgets': instance.widgets.map((e) => e.toJson()).toList(),
+};
+
 LabelTemplate _$LabelTemplateFromJson(Map<String, dynamic> json) =>
     LabelTemplate(
       templateName: json['templateName'] as String,
@@ -42,8 +54,8 @@ LabelTemplate _$LabelTemplateFromJson(Map<String, dynamic> json) =>
       canvasProperties: CanvasProperties.fromJson(
         json['canvasProperties'] as Map<String, dynamic>,
       ),
-      widgets: (json['widgets'] as List<dynamic>)
-          .map((e) => LabelWidget.fromJson(e as Map<String, dynamic>))
+      pages: (json['pages'] as List<dynamic>)
+          .map((e) => LabelPage.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
 
@@ -52,5 +64,5 @@ Map<String, dynamic> _$LabelTemplateToJson(LabelTemplate instance) =>
       'templateName': instance.templateName,
       'version': instance.version,
       'canvasProperties': instance.canvasProperties.toJson(),
-      'widgets': instance.widgets.map((e) => e.toJson()).toList(),
+      'pages': instance.pages.map((e) => e.toJson()).toList(),
     };
