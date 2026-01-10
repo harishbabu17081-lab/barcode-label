@@ -59,149 +59,155 @@ class _LoadTemplateDialogState extends State<LoadTemplateDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 600;
-
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       elevation: 10,
       backgroundColor: Colors.transparent,
-      child: Container(
-        width: isMobile ? double.infinity : 500,
-        height: 600,
-        
-        child: Column(
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primaryContainer,
-                      shape: BoxShape.circle,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
+        child: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primaryContainer,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.folder_open_rounded,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 28,
+                      ),
                     ),
-                    child: Icon(
-                      Icons.folder_open_rounded,
-                      color: Theme.of(context).colorScheme.primary,
-                      size: 28,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Load Template',
-                          style: Theme.of(context).textTheme.headlineSmall
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          'Select a saved template to edit',
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).textTheme.bodySmall?.color,
-                              ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            // Body
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _templateNames.isEmpty
-                  ? Center(
+                    const SizedBox(width: 16),
+                    Expanded(
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(
-                            Icons.note_add_outlined,
-                            size: 64,
-                            color: Theme.of(context).disabledColor,
-                          ),
-                          const SizedBox(height: 16),
                           Text(
-                            'No saved templates found',
-                            style: Theme.of(context).textTheme.titleMedium
+                            'Load Template',
+                            style: Theme.of(context).textTheme.headlineSmall
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            'Select a saved template to edit',
+                            style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(
-                                  color: Theme.of(context).disabledColor,
+                                  color: Theme.of(
+                                    context,
+                                  ).textTheme.bodySmall?.color,
                                 ),
                           ),
                         ],
                       ),
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: _templateNames.length,
-                      separatorBuilder: (context, index) =>
-                          const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        final name = _templateNames[index];
-                        return Container(
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surface,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Theme.of(
-                                context,
-                              ).dividerColor.withOpacity(0.5),
-                            ),
-                          ),
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            leading: CircleAvatar(
-                              backgroundColor: Theme.of(
-                                context,
-                              ).colorScheme.secondaryContainer.withOpacity(0.5),
-                              child: Icon(
-                                Icons.label_outline,
-                                color: Theme.of(context).colorScheme.secondary,
-                              ),
-                            ),
-                            title: Text(
-                              name,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            subtitle: Text(
-                              'Local Template',
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                            onTap: () async {
-                              await context
-                                  .read<CanvasProvider>()
-                                  .loadTemplateLocal(name);
-                              if (mounted) Navigator.pop(context);
-                            },
-                            trailing: IconButton(
-                              icon: const Icon(Icons.delete_outline),
-                              color: Colors.red[400],
-                              tooltip: 'Delete',
-                              onPressed: () => _deleteTemplate(name),
-                            ),
-                          ),
-                        );
-                      },
                     ),
-            ),
-          ],
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              // Body
+              Expanded(
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _templateNames.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.note_add_outlined,
+                              size: 64,
+                              color: Theme.of(context).disabledColor,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No saved templates found',
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(
+                                    color: Theme.of(context).disabledColor,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _templateNames.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final name = _templateNames[index];
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Theme.of(
+                                  context,
+                                ).dividerColor.withOpacity(0.5),
+                              ),
+                            ),
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              leading: CircleAvatar(
+                                backgroundColor: Theme.of(context)
+                                    .colorScheme
+                                    .secondaryContainer
+                                    .withOpacity(0.5),
+                                child: Icon(
+                                  Icons.label_outline,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.secondary,
+                                ),
+                              ),
+                              title: Text(
+                                name,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              subtitle: Text(
+                                'Local Template',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                              onTap: () async {
+                                await context
+                                    .read<CanvasProvider>()
+                                    .loadTemplateLocal(name);
+                                if (mounted) Navigator.pop(context);
+                              },
+                              trailing: IconButton(
+                                icon: const Icon(Icons.delete_outline),
+                                color: Colors.red[400],
+                                tooltip: 'Delete',
+                                onPressed: () => _deleteTemplate(name),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );

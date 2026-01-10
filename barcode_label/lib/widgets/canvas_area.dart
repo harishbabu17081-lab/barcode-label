@@ -39,52 +39,54 @@ class _CanvasAreaState extends State<CanvasArea> {
           color: Theme.of(context).scaffoldBackgroundColor,
           child: LayoutBuilder(
             builder: (context, constraints) {
-              return SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minWidth: constraints.maxWidth),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.vertical,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 40,
-                      horizontal: 40,
+              return InteractiveViewer(
+                boundaryMargin: const EdgeInsets.all(double.infinity),
+                minScale: 0.1,
+                maxScale: 5.0,
+                child: SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minWidth: constraints.maxWidth,
+                      minHeight: constraints.maxHeight,
                     ),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight:
-                            constraints.maxHeight - 80, // Subtract padding
-                      ),
-                      child: Column(
-                        mainAxisAlignment:
-                            MainAxisAlignment.center, // Vertically center
-                        crossAxisAlignment:
-                            CrossAxisAlignment.center, // Horizontally center
-                        children: [
-                          ...provider.template.pages.map((page) {
-                            return Padding(
-                              key: ValueKey(
-                                page.id,
-                              ), // Add Key to prevent rebuild issues
-                              padding: const EdgeInsets.only(bottom: 40),
-                              child: _buildPage(
-                                context,
-                                provider,
-                                page,
-                                width,
-                                height,
-                                bgColor,
-                              ),
-                            );
-                          }),
-                          const SizedBox(height: 20),
-                          // Auto-Add Page Drop Zone
-                          _buildNewPageDropZone(
-                            context,
-                            provider,
-                            width,
-                            height,
-                          ),
-                        ],
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(40),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment:
+                              MainAxisAlignment.center, // Vertically center
+                          crossAxisAlignment:
+                              CrossAxisAlignment.center, // Horizontally center
+                          children: [
+                            ...provider.template.pages.map((page) {
+                              return Padding(
+                                key: ValueKey(
+                                  page.id,
+                                ), // Add Key to prevent rebuild issues
+                                padding: const EdgeInsets.only(bottom: 40),
+                                child: _buildPage(
+                                  context,
+                                  provider,
+                                  page,
+                                  width,
+                                  height,
+                                  bgColor,
+                                ),
+                              );
+                            }),
+                            const SizedBox(height: 20),
+                            // Auto-Add Page Drop Zone
+                            _buildNewPageDropZone(
+                              context,
+                              provider,
+                              width,
+                              height,
+                              constraints.maxWidth -
+                                  80, // passing available width minus padding
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -100,14 +102,19 @@ class _CanvasAreaState extends State<CanvasArea> {
   Widget _buildNewPageDropZone(
     BuildContext context,
     CanvasProvider provider,
-    double width,
-    double height,
+    double labelWidth,
+    double labelHeight,
+    double availableWidth,
   ) {
+    // Drop zone shoud be at least as wide as the label, but stretch if screen is wider
+    final double zWidth = (availableWidth > labelWidth)
+        ? availableWidth
+        : labelWidth;
+
     return DragTarget<WidgetType>(
       onWillAccept: (data) => true,
       onAcceptWithDetails: (details) {
-        provider.addPage(); 
-
+        provider.addPage();
 
         final widget = createDefaultWidget(details.data, const Offset(20, 20));
         provider.addWidget(widget);
@@ -118,16 +125,14 @@ class _CanvasAreaState extends State<CanvasArea> {
       },
       builder: (context, candidateData, rejectedData) {
         return Container(
-          width: width,
-          height: 100, 
+          width: zWidth,
+          height: 100,
           decoration: BoxDecoration(
             color: Colors.grey.withOpacity(0.1),
             border: Border.all(
               color: Colors.grey.withOpacity(0.5),
               width: 2,
-              style: BorderStyle
-                  .none, 
-            
+              style: BorderStyle.none,
             ),
             borderRadius: BorderRadius.circular(12),
           ),
@@ -164,7 +169,7 @@ class _CanvasAreaState extends State<CanvasArea> {
     return GestureDetector(
       onTap: () {
         provider.setActivePage(page.id);
-        provider.selectWidget(null); 
+        provider.selectWidget(null);
       },
       child: _PageContainer(
         page: page,
@@ -248,6 +253,7 @@ class _PageContainerState extends State<_PageContainer> {
     provider.addWidget(widget);
   }
 }
+
 LabelWidget createDefaultWidget(WidgetType type, Offset position) {
   Map<String, dynamic> initialProps = {};
   double defaultW = 100;
@@ -312,7 +318,6 @@ class _WidgetRenderer extends StatelessWidget {
         provider.selectWidget(widget.id);
       },
       onPanUpdate: (details) {
-
         provider.updateWidgetPosition(
           widget.id,
           WidgetPosition(

@@ -64,7 +64,10 @@ class EditorScreen extends StatelessWidget {
                         SnackBar(
                           content: Text('Template "$newName" saved locally'),
                           behavior: SnackBarBehavior.floating,
-                          width: 400,
+                          // width: 400, // Removed fixed width for responsiveness
+                          margin: const EdgeInsets.all(
+                            16,
+                          ), // Added margin for better mobile look
                         ),
                       );
                     }
